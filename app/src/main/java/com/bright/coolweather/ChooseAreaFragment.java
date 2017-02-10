@@ -13,6 +13,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bright.coolweather.db.City;
 import com.bright.coolweather.db.County;
@@ -183,7 +184,14 @@ public class ChooseAreaFragment extends Fragment {
         HttpUtil.sendOkHttpRequest(address, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-
+                //通过runOnUiThread()方法回到主线程处理逻辑
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        closeProgressDialog();
+                        Toast.makeText(getContext(),"加载失败",Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
 
             @Override
@@ -197,10 +205,37 @@ public class ChooseAreaFragment extends Fragment {
                 }else if ("county".equals(type)){
                     result = Utility.handleCountyResponse(responseText, selectedCity.getId());
                 }
+                if(result){
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            closeProgressDialog();
+                            if ("province".equals(type)){
+                                queryProvinces();
+                            }else if ("city".equals(type)){
+                                queryCities();
+                            }else if ("county".equals(type)){
+                                queryCounties();
+                            }
+                        }
+                    });
+                }
             }
         });
     }
 
+    private void closeProgressDialog() {
+        if (progressDialog != null){
+            progressDialog.dismiss();
+        }
+    }
+
     private void showProgressDialog() {
+        if (progressDialog == null){
+            progressDialog = new ProgressDialog(getActivity());
+            progressDialog.setMessage("正在加载...");
+            progressDialog.setCanceledOnTouchOutside(false);
+        }
+        progressDialog.show();
     }
 }
